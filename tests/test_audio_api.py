@@ -60,6 +60,41 @@ def test_audio_analysis_rejects_non_mp3(client: TestClient) -> None:
     assert response.status_code == 415
 
 
+def test_audio_metadata_reads_mp3_tags(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(
+        audio_api,
+        "probe_mp3",
+        lambda _path: {
+            "duration_seconds": 42.5,
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 2,
+            "bitrate_kbps": 192.0,
+            "title": "Demo",
+            "artist": "Artist",
+            "album": "Album",
+        },
+    )
+
+    response = client.post(
+        "/api/v1/audio/metadata",
+        files={"file": ("song.mp3", b"ID3fake-mp3-content", "audio/mpeg")},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "filename": "song.mp3",
+        "duration_seconds": 42.5,
+        "codec": "mp3",
+        "sample_rate_hz": 44100,
+        "channels": 2,
+        "bitrate_kbps": 192.0,
+        "title": "Demo",
+        "artist": "Artist",
+        "album": "Album",
+    }
+
+
 def test_audio_analysis_rejects_invalid_mp3_content(client: TestClient) -> None:
     response = client.post(
         "/api/v1/audio/analyze",

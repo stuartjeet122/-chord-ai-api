@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import tempfile
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -15,6 +17,7 @@ from music_api.music.audio_analysis import (
     ChordEventData,
     analyze_mp3,
     parse_lrc,
+    probe_mp3,
 )
 
 router = APIRouter(prefix="/audio", tags=["Audio analysis"])
@@ -62,6 +65,50 @@ class AudioAnalysisResponse(BaseModel):
     analysis_notes: list[str]
 
 
+class AudioMetadataResponse(BaseModel):
+    filename: str
+    duration_seconds: float
+    codec: str | None
+    sample_rate_hz: int | None
+    channels: int | None
+    bitrate_kbps: float | None
+    title: str | None
+    artist: str | None
+    album: str | None
+
+
+@asynccontextmanager
+async def _temporary_mp3_upload(file: UploadFile) -> AsyncIterator[tuple[str, Path]]:
+    filename = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1]
+    if Path(filename).suffix.lower() != ".mp3":
+        await file.close()
+        raise HTTPException(status_code=415, detail="Only MP3 uploads are supported.")
+
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
+            size = 0
+            while chunk := await file.read(UPLOAD_CHUNK_BYTES):
+                size += len(chunk)
+                if size > MAX_UPLOAD_BYTES:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=(
+                            "Audio file must be no larger than "
+                            f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+                        ),
+                    )
+                temp_file.write(chunk)
+        if size == 0:
+            raise HTTPException(status_code=400, detail="The uploaded audio file is empty.")
+        yield filename, temp_path
+    finally:
+        await file.close()
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+
+
 @router.post(
     "/analyze",
     response_model=AudioAnalysisResponse,
@@ -84,33 +131,13 @@ async def analyze_audio(
         ),
     ] = None,
 ) -> AudioAnalysisResponse:
-    filename = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1]
-    if Path(filename).suffix.lower() != ".mp3":
-        raise HTTPException(status_code=415, detail="Only MP3 uploads are supported.")
     if lyrics_lrc is not None:
         try:
             parse_lrc(lyrics_lrc, float(MAX_DURATION_SECONDS))
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    temp_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
-            temp_path = Path(temp_file.name)
-            size = 0
-            while chunk := await file.read(UPLOAD_CHUNK_BYTES):
-                size += len(chunk)
-                if size > MAX_UPLOAD_BYTES:
-                    raise HTTPException(
-                        status_code=413,
-                        detail=(
-                            "Audio file must be no larger than "
-                            f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
-                        ),
-                    )
-                temp_file.write(chunk)
-        if size == 0:
-            raise HTTPException(status_code=400, detail="The uploaded audio file is empty.")
+    async with _temporary_mp3_upload(file) as (filename, temp_path):
         try:
             analysis = await asyncio.to_thread(analyze_mp3, temp_path)
         except ValueError as exc:
@@ -154,10 +181,31 @@ async def analyze_audio(
                 ),
             ],
         )
-    finally:
-        await file.close()
-        if temp_path is not None:
-            temp_path.unlink(missing_ok=True)
+
+
+@router.post(
+    "/metadata",
+    response_model=AudioMetadataResponse,
+    summary="Extract metadata from an MP3",
+    description=(
+        "Upload an MP3 to read its duration, codec, sample rate, channel count, bitrate, "
+        "and available title, artist, and album tags."
+    ),
+)
+async def extract_audio_metadata(
+    file: Annotated[
+        UploadFile,
+        File(description="MP3 audio file (maximum 50 MB and 10 minutes)."),
+    ],
+) -> AudioMetadataResponse:
+    async with _temporary_mp3_upload(file) as (filename, temp_path):
+        try:
+            metadata = await asyncio.to_thread(probe_mp3, temp_path)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return AudioMetadataResponse(filename=filename, **metadata)
 
 
 def _nearest_beat_index(

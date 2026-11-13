@@ -11,14 +11,6 @@ def test_chord_parser_and_progression_analysis() -> None:
     assert [item["roman_numeral"] for item in result["chords"]] == ["I", "V", "vi", "IV"]
 
 
-def test_stateless_theory_routes(client: TestClient) -> None:
-    parsed = client.post("/api/v1/theory/chords/parse", json={"symbol": "Dm7/F"})
-    assert parsed.status_code == 200
-    assert parsed.json()["bass"] == "F"
-
-    progression = client.post(
-        "/api/v1/theory/progressions/analyze",
-        json={"chord_symbols": ["C", "G", "Am", "F"], "key": "C major"},
-    )
-    assert progression.status_code == 200
-    assert progression.json()["chords"][1]["roman_numeral"] == "V"
+def test_theory_routes_are_not_exposed(client: TestClient) -> None:
+    response = client.post("/api/v1/theory/chords/parse", json={"symbol": "Dm7/F"})
+    assert response.status_code == 404

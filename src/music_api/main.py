@@ -29,7 +29,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         description=(
             "Upload an MP3 to estimate its tempo, beat positions, key, chord changes, "
             "and active pitch classes. Optionally include timestamped LRC lyrics to align "
-            "them with the analysis. Also includes standalone music-theory and rhythm tools."
+            "them with the analysis. Includes a separate endpoint to inspect MP3 metadata."
         ),
         version="1.0.0",
         debug=resolved_settings.debug,
@@ -42,15 +42,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             {
                 "name": "Audio analysis",
                 "description": (
-                    "Analyze an MP3 upload for tempo, beats, key, chords, and pitch classes. "
-                    "Timed LRC lyrics can be included for timestamped lyric lines."
-                ),
-            },
-            {
-                "name": "Music theory",
-                "description": (
-                    "Parse and calculate notes, intervals, scales, chords, keys, "
-                    "progressions, transposition, and capo positions."
+                    "Upload an MP3 to inspect its metadata or analyze its tempo, beats, key, "
+                    "chords, and estimated notes. Timed LRC lyrics can be included."
                 ),
             },
             {

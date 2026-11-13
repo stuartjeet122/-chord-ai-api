@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import threading
@@ -66,6 +67,17 @@ class AnalysisCapacityError(RuntimeError):
     pass
 
 
+class AudioMetadata(TypedDict):
+    duration_seconds: float
+    codec: str | None
+    sample_rate_hz: int | None
+    channels: int | None
+    bitrate_kbps: float | None
+    title: str | None
+    artist: str | None
+    album: str | None
+
+
 def parse_lrc(text: str, duration_seconds: float) -> list[LyricLineData]:
     if len(text) > 100_000:
         raise ValueError("LRC lyrics must be no larger than 100,000 characters.")
@@ -114,6 +126,60 @@ def analyze_mp3(path: Path) -> AnalysisResult:
         return _analyze_mp3(path)
     finally:
         _ANALYSIS_SLOTS.release()
+
+
+def probe_mp3(path: Path) -> AudioMetadata:
+    _validate_mp3(path)
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "a:0",
+                "-show_entries",
+                (
+                    "format=duration,bit_rate:format_tags=title,artist,album:"
+                    "stream=codec_name,sample_rate,channels,bit_rate:"
+                    "stream_tags=title,artist,album"
+                ),
+                "-of",
+                "json",
+                str(path),
+            ],
+            check=True,
+            capture_output=True,
+            timeout=15,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError("FFprobe is required to inspect MP3 metadata.") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError("MP3 metadata inspection exceeded the time limit.") from exc
+    except subprocess.CalledProcessError as exc:
+        raise ValueError("Could not read metadata from the uploaded MP3.") from exc
+
+    try:
+        metadata = json.loads(result.stdout)
+        stream = metadata["streams"][0]
+        format_info = metadata.get("format", {})
+        tags = {**format_info.get("tags", {}), **stream.get("tags", {})}
+        duration = float(format_info["duration"])
+        if not 0 < duration <= MAX_DURATION_SECONDS:
+            raise ValueError(f"Audio must be {MAX_DURATION_SECONDS // 60} minutes or shorter.")
+        bitrate = stream.get("bit_rate") or format_info.get("bit_rate")
+        return {
+            "duration_seconds": round(duration, 3),
+            "codec": stream.get("codec_name"),
+            "sample_rate_hz": int(stream["sample_rate"]) if stream.get("sample_rate") else None,
+            "channels": int(stream["channels"]) if stream.get("channels") else None,
+            "bitrate_kbps": round(int(bitrate) / 1000, 2) if bitrate else None,
+            "title": tags.get("title"),
+            "artist": tags.get("artist"),
+            "album": tags.get("album"),
+        }
+    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("Could not read metadata from the uploaded MP3.") from exc
 
 
 def _analyze_mp3(path: Path) -> AnalysisResult:

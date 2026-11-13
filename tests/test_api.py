@@ -38,14 +38,18 @@ def test_openapi_shows_functional_endpoints_only(client: TestClient) -> None:
 
     assert "/api/v1/" not in paths
     assert not any(path.startswith("/api/v1/health") for path in paths)
-    assert len(paths) == 14
+    assert set(paths) == {
+        "/api/v1/audio/analyze",
+        "/api/v1/audio/metadata",
+        "/api/v1/music/metronome/schedule",
+    }
     assert {tag["name"] for tag in schema["tags"]} == {
         "Audio analysis",
-        "Music theory",
         "Rhythm",
     }
     assert "/api/v1/audio/analyze" in paths
-    assert paths["/api/v1/theory/notes/parse"]["post"]["summary"] == "Parse a musical note"
+    assert "/api/v1/theory/notes/parse" not in paths
+    assert paths["/api/v1/audio/metadata"]["post"]["summary"] == "Extract metadata from an MP3"
     assert (
         paths["/api/v1/music/metronome/schedule"]["post"]["summary"]
         == "Generate a deterministic metronome schedule"
@@ -63,7 +67,7 @@ def test_openapi_uses_app_base_path_for_reverse_proxy(
 
     assert schema["servers"] == [{"url": "/chord-ai-api"}]
     assert (
-        f"{schema['servers'][0]['url']}/api/v1/theory/notes/parse"
-        == "/chord-ai-api/api/v1/theory/notes/parse"
+        f"{schema['servers'][0]['url']}/api/v1/audio/analyze"
+        == "/chord-ai-api/api/v1/audio/analyze"
     )
-    assert "/api/v1/theory/notes/parse" in schema["paths"]
+    assert "/api/v1/audio/analyze" in schema["paths"]
