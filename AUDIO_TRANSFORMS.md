@@ -1,5 +1,7 @@
 # Audio pitch and tempo transformations
 
+> Historical phase report. Audio transformation endpoints and worker-backed processing are not part of the current stateless application.
+
 ## Engine decision
 
 Phase 9 uses the SoundTouch `SoundStretch` command-line utility behind the

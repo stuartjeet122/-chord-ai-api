@@ -1,5 +1,7 @@
 # Audio ingestion and conversion
 
+> Historical phase report. Upload, storage, and worker-backed ingestion features are not part of the current stateless application.
+
 Phase 4 adds server-side audio inspection, metadata/artwork extraction, conversion, and durable background jobs. It does not implement chord recognition, beat/key analysis, lyrics, source separation, or AI inference.
 
 ## Runtime requirements

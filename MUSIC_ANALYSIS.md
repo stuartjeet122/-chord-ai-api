@@ -1,5 +1,7 @@
 # Phase 7 music analysis
 
+> Historical phase report. Analysis persistence and background processing are not part of the current stateless application.
+
 ## Status
 
 This phase adds an asynchronous, versioned analysis path using the existing audio validation, storage, job, and DSP infrastructure. The locally available analysis is a **DSP candidate generator**, not a trained or accuracy-certified chord recognizer. Phase 6 did not validate or enable any model; no model output is produced or implied here. The project environment also has no chord or note model runtime installed.

@@ -1,5 +1,7 @@
 # Audio DSP and preprocessing
 
+> Historical phase report. Audio processing endpoints and background workers are not part of the current stateless application.
+
 Phase 5 adds reusable, non-AI audio analysis and processing. The FastAPI process validates requests and queues durable jobs; CPU DSP and FFmpeg work runs in Celery workers, independently of request handling. Results and processing history are persisted with source/output asset references.
 
 ## Endpoints

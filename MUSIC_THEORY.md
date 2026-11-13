@@ -1,5 +1,7 @@
 # Deterministic music theory engine
 
+> Historical phase report. The stateless theory calculations remain available; the versioned persistence API described here is no longer included.
+
 ## Scope and status
 
 The theory engine adds stateless, deterministic calculations and an optional,

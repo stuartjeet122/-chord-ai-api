@@ -101,13 +101,18 @@ def _subdivision_offsets(subdivision: str, beat_seconds: float, swing_ratio: flo
         if swing_ratio <= 0:
             return [0.0, 0.5, 1.0]
         first = (0.5 + swing_ratio / 2.0) * beat_seconds
-        second = (0.5 - swing_ratio / 2.0) * beat_seconds
         return [0.0, first, beat_seconds]
     if subdivision == "sixteenth":
         quarter = beat_seconds / 4.0
         if swing_ratio <= 0:
             return [0.0, quarter, quarter * 2, quarter * 3, beat_seconds]
-        return [0.0, quarter * (1.0 + swing_ratio / 2.0), quarter * 2.0, quarter * 3.0 + quarter * (swing_ratio / 2.0), beat_seconds]
+        return [
+            0.0,
+            quarter * (1.0 + swing_ratio / 2.0),
+            quarter * 2.0,
+            quarter * 3.0 + quarter * (swing_ratio / 2.0),
+            beat_seconds,
+        ]
     if subdivision == "triplet":
         segment = beat_seconds / 3.0
         return [0.0, segment, segment * 2, beat_seconds]
@@ -120,7 +125,7 @@ def _resolve_bpm_at(tempo_points: list[dict[str, Any]], timestamp_seconds: float
     sorted_points = sorted(tempo_points, key=lambda item: float(item["timestamp_seconds"]))
     if timestamp_seconds <= float(sorted_points[0]["timestamp_seconds"]):
         return float(sorted_points[0]["bpm"])
-    for previous, current in zip(sorted_points, sorted_points[1:]):
+    for previous, current in zip(sorted_points, sorted_points[1:], strict=False):
         previous_time = float(previous["timestamp_seconds"])
         current_time = float(current["timestamp_seconds"])
         if current_time >= timestamp_seconds:
@@ -224,7 +229,13 @@ def build_schedule_window(
 
     events: list[dict[str, Any]] = []
     start_time = max(0.0, start_seconds)
-    total_measures = max(1, math.ceil((duration_seconds + start_time) / measure_duration_seconds(bpm_value, time_signature=parsed)))
+    total_measures = max(
+        1,
+        math.ceil(
+            (duration_seconds + start_time)
+            / measure_duration_seconds(bpm_value, time_signature=parsed)
+        ),
+    )
     measure_duration = measure_duration_seconds(bpm_value, time_signature=parsed)
 
     for measure_index in range(total_measures):
@@ -292,7 +303,11 @@ def build_schedule_window(
                 )
         events = count_in_events + events
 
-    return {"events": events[:max_events], "truncated": len(events) > max_events, "total_events": len(events)}
+    return {
+        "events": events[:max_events],
+        "truncated": len(events) > max_events,
+        "total_events": len(events),
+    }
 
 
 def build_variable_tempo_map(
@@ -340,7 +355,9 @@ def build_count_in_schedule(
         bpm=bpm,
         time_signature=time_signature,
         start_seconds=start_offset_seconds,
-        duration_seconds=measure_duration_seconds(bpm, time_signature=time_signature) * max(1, bar_count),
+        duration_seconds=(
+            measure_duration_seconds(bpm, time_signature=time_signature) * max(1, bar_count)
+        ),
         subdivisions=subdivision,
         count_in_bars=bar_count,
         max_events=10_000,

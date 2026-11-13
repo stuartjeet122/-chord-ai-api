@@ -1,5 +1,7 @@
 # Phase 6 model evaluation
 
+> Historical research report. The current application does not include AI inference infrastructure.
+
 ## Scope and evidence standard
 
 This is a source-level evaluation of official repositories, project documentation, model cards, and linked papers checked on 2026-11-12. No model was installed, its weights downloaded, or inference run in this environment. Reported paper/project results below are attributed to their authors, not presented as measurements by this application. Memory, latency, and cross-model target-catalog accuracy are unknown unless specifically stated.

@@ -28,7 +28,9 @@ def test_validate_bpm_rejects_invalid_ranges() -> None:
         (120, "6/8", 1.5),
     ],
 )
-def test_time_signature_measure_durations_are_consistent(bpm: float, time_signature: str, expected: float) -> None:
+def test_time_signature_measure_durations_are_consistent(
+    bpm: float, time_signature: str, expected: float
+) -> None:
     assert measure_duration_seconds(bpm, time_signature=time_signature) == pytest.approx(expected)
 
 
@@ -44,8 +46,13 @@ def test_schedule_generation_contains_expected_beat_and_subdivision_events() -> 
     assert schedule["truncated"] is False
     events = schedule["events"]
     assert events[0]["phase"] == "count_in"
-    assert any(event["event_type"] == "downbeat" and event["measure_index"] == 0 for event in events)
-    assert any(event["subdivision_index"] == 1 and event["event_type"] == "subdivision" for event in events)
+    assert any(
+        event["event_type"] == "downbeat" and event["measure_index"] == 0 for event in events
+    )
+    assert any(
+        event["subdivision_index"] == 1 and event["event_type"] == "subdivision"
+        for event in events
+    )
 
 
 def test_tempo_ramp_and_count_in_are_predictable() -> None:
@@ -54,7 +61,9 @@ def test_tempo_ramp_and_count_in_are_predictable() -> None:
     assert ramp["end_bpm"] == pytest.approx(110)
     assert len(ramp["points"]) == 5
 
-    count_in = build_count_in_schedule(bpm=80, time_signature="4/4", bar_count=2, subdivision="beat")
+    count_in = build_count_in_schedule(
+        bpm=80, time_signature="4/4", bar_count=2, subdivision="beat"
+    )
     assert len(count_in) == 8
     assert count_in[0]["event_type"] == "count-in"
 
@@ -62,8 +71,12 @@ def test_tempo_ramp_and_count_in_are_predictable() -> None:
 def test_route_generates_schedule(client) -> None:
     response = client.post(
         "/api/v1/music/metronome/schedule",
-        json={"bpm": 120, "time_signature": "4/4", "duration_seconds": 1.0, "subdivision": "eighth"},
-        headers={"X-Dev-User-ID": "00000000-0000-0000-0000-000000000001"},
+        json={
+            "bpm": 120,
+            "time_signature": "4/4",
+            "duration_seconds": 1.0,
+            "subdivision": "eighth",
+        },
     )
     assert response.status_code == 200
     body = response.json()

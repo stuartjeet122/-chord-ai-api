@@ -1,5 +1,7 @@
 # Music Intelligence API — Technical Design Proposal
 
+> Historical proposal. The current application is intentionally stateless and does not include the persistence, broker, media storage, or worker architecture described here.
+
 **Status:** Design for review; no application code has been started  
 **Research checked:** 2026-11-12  
 **Scope:** Backend/API only; no frontend  

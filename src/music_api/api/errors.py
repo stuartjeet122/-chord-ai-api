@@ -7,7 +7,6 @@ from typing import Any
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from music_api.errors import ApplicationError
@@ -115,21 +114,3 @@ async def http_error_handler(
     )
 
 
-async def database_error_handler(
-    request: Request,
-    exc: Exception,
-) -> JSONResponse:
-    if not isinstance(exc, SQLAlchemyError):
-        raise TypeError("Database error handler received an unexpected exception.")
-    logger.exception(
-        "Database operation failed",
-        extra={"request_id": getattr(request.state, "request_id", "unknown")},
-    )
-    is_unavailable = isinstance(exc, OperationalError)
-    return problem_response(
-        request,
-        status_code=503 if is_unavailable else 500,
-        code="database_unavailable" if is_unavailable else "database_error",
-        title="Service temporarily unavailable" if is_unavailable else "Internal server error",
-        detail="A database operation could not be completed.",
-    )

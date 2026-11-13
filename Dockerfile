@@ -6,19 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg soundstretch=2.3.2+ds1-1 \
-    && rm -rf /var/lib/apt/lists/*
-
 RUN groupadd --system --gid 10001 app \
-    && useradd --system --uid 10001 --gid app --home-dir /app app \
-    && mkdir -p /var/lib/music-api /tmp/music-api \
-    && chown -R app:app /var/lib/music-api /tmp/music-api
+    && useradd --system --uid 10001 --gid app --home-dir /app app
 
 COPY pyproject.toml README.md ./
 COPY src ./src
-COPY migrations ./migrations
-COPY alembic.ini ./
 
 RUN pip install --no-cache-dir .
 

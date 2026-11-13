@@ -1,5 +1,7 @@
 # Phase 6 AI infrastructure
 
+> Historical phase report. AI inference and database-backed job infrastructure are not part of the current stateless application.
+
 ## Status and boundaries
 
 The API and worker infrastructure for model discovery, lifecycle management, isolated inference, normalized outputs, persistence, and chord/note benchmarking is implemented. **No production model provider is currently registered or enabled.** The catalog entries are research candidates, not promises of runnable models. Inference and benchmark submission therefore return `503 model_unavailable` until a provider is separately installed, configured, licensed, and validated. No model weights are downloaded automatically.
