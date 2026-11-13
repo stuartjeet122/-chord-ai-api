@@ -32,6 +32,21 @@ def test_swagger_is_available(client: TestClient) -> None:
     assert client.get("/api/v1/openapi.json").status_code == 200
 
 
+def test_openapi_shows_functional_endpoints_only(client: TestClient) -> None:
+    schema = client.get("/api/v1/openapi.json").json()
+    paths = schema["paths"]
+
+    assert "/api/v1/" not in paths
+    assert not any(path.startswith("/api/v1/health") for path in paths)
+    assert len(paths) == 13
+    assert {tag["name"] for tag in schema["tags"]} == {"Music theory", "Rhythm"}
+    assert paths["/api/v1/theory/notes/parse"]["post"]["summary"] == "Parse a musical note"
+    assert (
+        paths["/api/v1/music/metronome/schedule"]["post"]["summary"]
+        == "Generate a deterministic metronome schedule"
+    )
+
+
 def test_openapi_uses_app_base_path_for_reverse_proxy(
     settings: Settings,
     monkeypatch: MonkeyPatch,
@@ -42,6 +57,8 @@ def test_openapi_uses_app_base_path_for_reverse_proxy(
         schema = proxy_client.get("/api/v1/openapi.json").json()
 
     assert schema["servers"] == [{"url": "/chord-ai-api"}]
-    assert f"{schema['servers'][0]['url']}{next(iter(schema['paths']))}" == (
-        "/chord-ai-api/api/v1/"
+    assert (
+        f"{schema['servers'][0]['url']}/api/v1/theory/notes/parse"
+        == "/chord-ai-api/api/v1/theory/notes/parse"
     )
+    assert "/api/v1/theory/notes/parse" in schema["paths"]

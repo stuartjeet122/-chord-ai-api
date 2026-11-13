@@ -26,7 +26,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app_base_path = os.environ.get("APP_BASE_PATH", "").rstrip("/")
     app = FastAPI(
         title=resolved_settings.app_name,
-        description="Stateless music theory and rhythm utilities.",
+        description=(
+            "Tools for music theory and rhythm. Use the Music theory endpoints to work "
+            "with notes, intervals, scales, chords, keys, progressions, transposition, "
+            "and capo positions. Use Rhythm to generate a metronome schedule."
+        ),
         version="1.0.0",
         debug=resolved_settings.debug,
         servers=[{"url": app_base_path}] if app_base_path else None,
@@ -34,7 +38,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url=f"{resolved_settings.api_prefix}/docs" if docs_enabled else None,
         redoc_url=f"{resolved_settings.api_prefix}/redoc" if docs_enabled else None,
         swagger_ui_parameters={"url": "./openapi.json"},
-        openapi_tags=[{"name": "General", "description": "Service information."}],
+        openapi_tags=[
+            {
+                "name": "Music theory",
+                "description": (
+                    "Parse and calculate notes, intervals, scales, chords, keys, "
+                    "progressions, transposition, and capo positions."
+                ),
+            },
+            {
+                "name": "Rhythm",
+                "description": "Generate beat and subdivision events for a metronome.",
+            },
+        ],
     )
     app.state.settings = resolved_settings
 

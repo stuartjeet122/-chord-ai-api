@@ -57,7 +57,11 @@ def _calculate(operation: Callable[[], ResultT]) -> ResultT:  # noqa: UP047
         raise ApplicationError("invalid_theory_input", str(exc), 422) from exc
 
 
-@theory_router.post("/notes/parse", response_model=NoteResponse)
+@theory_router.post(
+    "/notes/parse",
+    response_model=NoteResponse,
+    summary="Parse a musical note",
+)
 async def parse_note_endpoint(request: NoteRequest) -> NoteResponse:
     parsed = _calculate(lambda: parse_note(request.note))
     return NoteResponse(
@@ -69,7 +73,11 @@ async def parse_note_endpoint(request: NoteRequest) -> NoteResponse:
     )
 
 
-@theory_router.post("/intervals", response_model=IntervalResponse)
+@theory_router.post(
+    "/intervals",
+    response_model=IntervalResponse,
+    summary="Identify the interval between two pitches",
+)
 async def interval_endpoint(request: IntervalRequest) -> IntervalResponse:
     interval = _calculate(lambda: identify_interval(request.from_pitch, request.to_pitch))
     return IntervalResponse(
@@ -81,7 +89,11 @@ async def interval_endpoint(request: IntervalRequest) -> IntervalResponse:
     )
 
 
-@theory_router.post("/scales", response_model=ScaleResponse)
+@theory_router.post(
+    "/scales",
+    response_model=ScaleResponse,
+    summary="Build a scale",
+)
 async def scale_endpoint(request: ScaleRequest) -> ScaleResponse:
     result = _calculate(
         lambda: scale_information(
@@ -93,25 +105,41 @@ async def scale_endpoint(request: ScaleRequest) -> ScaleResponse:
     return ScaleResponse.model_validate(result)
 
 
-@theory_router.post("/chords/parse", response_model=ChordResponse)
+@theory_router.post(
+    "/chords/parse",
+    response_model=ChordResponse,
+    summary="Parse a chord symbol",
+)
 async def parse_chord_endpoint(request: ChordParseRequest) -> ChordResponse:
     return ChordResponse.model_validate(
         _calculate(lambda: parse_chord(request.symbol).as_dict())
     )
 
 
-@theory_router.post("/chords/construct", response_model=ChordResponse)
+@theory_router.post(
+    "/chords/construct",
+    response_model=ChordResponse,
+    summary="Construct a chord",
+)
 async def construct_chord_endpoint(request: ChordConstructionRequest) -> ChordResponse:
     result = _calculate(lambda: theory.construct_chord(request.root, request.quality).as_dict())
     return ChordResponse.model_validate(result)
 
 
-@theory_router.post("/keys", response_model=KeyResponse)
+@theory_router.post(
+    "/keys",
+    response_model=KeyResponse,
+    summary="Get a key signature",
+)
 async def key_endpoint(request: KeyRequest) -> KeyResponse:
     return KeyResponse.model_validate(_calculate(lambda: key_signature(request.key)))
 
 
-@theory_router.post("/keys/transpose", response_model=KeyTranspositionResponse)
+@theory_router.post(
+    "/keys/transpose",
+    response_model=KeyTranspositionResponse,
+    summary="Transpose a key",
+)
 async def transpose_key_endpoint(request: KeyTranspositionRequest) -> KeyTranspositionResponse:
     target_key = _calculate(
         lambda: transpose_key(request.key, request.semitones, prefer_flats=request.prefer_flats)
@@ -125,7 +153,11 @@ async def transpose_key_endpoint(request: KeyTranspositionRequest) -> KeyTranspo
     )
 
 
-@theory_router.post("/progressions/analyze", response_model=ProgressionResponse)
+@theory_router.post(
+    "/progressions/analyze",
+    response_model=ProgressionResponse,
+    summary="Analyze a chord progression",
+)
 async def progression_endpoint(request: ProgressionRequest) -> ProgressionResponse:
     timestamps = (
         None if request.timestamps is None else [item.model_dump() for item in request.timestamps]
@@ -141,7 +173,11 @@ async def progression_endpoint(request: ProgressionRequest) -> ProgressionRespon
     return ProgressionResponse.model_validate(result)
 
 
-@theory_router.post("/progressions/compare", response_model=ProgressionComparisonResponse)
+@theory_router.post(
+    "/progressions/compare",
+    response_model=ProgressionComparisonResponse,
+    summary="Compare two chord progressions",
+)
 async def compare_progressions_endpoint(
     request: ProgressionComparisonRequest,
 ) -> ProgressionComparisonResponse:
@@ -155,7 +191,11 @@ async def compare_progressions_endpoint(
     return ProgressionComparisonResponse.model_validate(result)
 
 
-@theory_router.post("/transpose", response_model=TranspositionResponse)
+@theory_router.post(
+    "/transpose",
+    response_model=TranspositionResponse,
+    summary="Transpose a chord progression",
+)
 async def transpose_endpoint(request: TranspositionRequest) -> TranspositionResponse:
     result = _calculate(
         lambda: transpose_progression(
@@ -168,7 +208,11 @@ async def transpose_endpoint(request: TranspositionRequest) -> TranspositionResp
     return TranspositionResponse.model_validate(result)
 
 
-@theory_router.post("/transpose-between-keys", response_model=KeyAwareTranspositionResponse)
+@theory_router.post(
+    "/transpose-between-keys",
+    response_model=KeyAwareTranspositionResponse,
+    summary="Transpose a progression between keys",
+)
 async def transpose_between_keys_endpoint(
     request: KeyAwareTranspositionRequest,
 ) -> KeyAwareTranspositionResponse:
@@ -183,7 +227,11 @@ async def transpose_between_keys_endpoint(
     return KeyAwareTranspositionResponse.model_validate(result)
 
 
-@theory_router.post("/capo", response_model=CapoResponse)
+@theory_router.post(
+    "/capo",
+    response_model=CapoResponse,
+    summary="Calculate capo chord positions",
+)
 async def capo_endpoint(request: CapoRequest) -> CapoResponse:
     result = _calculate(
         lambda: capo_calculation(

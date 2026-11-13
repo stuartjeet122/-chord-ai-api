@@ -22,7 +22,7 @@ The service listens at `http://127.0.0.1:8000` by default:
 - `GET /api/v1/health/live` — liveness probe
 - `GET /api/v1/health/ready` — readiness probe
 
-Stateless endpoints include music-theory operations under `/api/v1/theory` and metronome schedule generation at `POST /api/v1/music/metronome/schedule`.
+Swagger presents only the main features, grouped into **Music theory** and **Rhythm**. Internal API information and health-check routes remain available to the service and deployment probes but are hidden from the public API documentation. Music-theory operations are under `/api/v1/theory`; metronome schedule generation is at `POST /api/v1/music/metronome/schedule`.
 
 ## Configuration
 

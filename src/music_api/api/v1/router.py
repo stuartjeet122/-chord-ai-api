@@ -8,7 +8,12 @@ from music_api.music.rhythm_api import router as rhythm_router
 from music_api.music.theory_api import theory_router
 
 router = APIRouter()
-router.include_router(root_router, tags=["General"])
-router.include_router(health_router, prefix="/health", tags=["Health"])
+router.include_router(root_router, tags=["General"], include_in_schema=False)
+router.include_router(
+    health_router,
+    prefix="/health",
+    tags=["Health"],
+    include_in_schema=False,
+)
 router.include_router(theory_router)
 router.include_router(rhythm_router)
