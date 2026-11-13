@@ -22,5 +22,7 @@ def test_versioned_root_returns_api_information(client: TestClient) -> None:
 
 
 def test_swagger_is_available(client: TestClient) -> None:
-    assert client.get("/api/v1/docs").status_code == 200
+    docs = client.get("/api/v1/docs")
+    assert docs.status_code == 200
+    assert '"url": "./openapi.json"' in docs.text
     assert client.get("/api/v1/openapi.json").status_code == 200

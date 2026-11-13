@@ -29,6 +29,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=f"{resolved_settings.api_prefix}/openapi.json" if docs_enabled else None,
         docs_url=f"{resolved_settings.api_prefix}/docs" if docs_enabled else None,
         redoc_url=f"{resolved_settings.api_prefix}/redoc" if docs_enabled else None,
+        swagger_ui_parameters={"url": "./openapi.json"},
         openapi_tags=[{"name": "General", "description": "Service information."}],
     )
     app.state.settings = resolved_settings
