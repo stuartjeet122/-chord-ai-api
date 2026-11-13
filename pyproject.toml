@@ -5,11 +5,13 @@ build-backend = "hatchling.build"
 [project]
 name = "music-intelligence-api"
 version = "0.1.0"
-description = "Stateless music theory and rhythm API"
+description = "Music analysis API for audio uploads, music theory, and rhythm"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.121.3",
+    "librosa==0.11.0",
+    "python-multipart==0.0.20",
     "pydantic==2.12.4",
     "pydantic-settings==2.11.0",
     "uvicorn[standard]==0.38.0",

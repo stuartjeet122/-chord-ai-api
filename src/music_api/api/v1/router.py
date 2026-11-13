@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from music_api.api.v1.health import router as health_router
 from music_api.api.v1.root import router as root_router
+from music_api.music.audio_api import router as audio_router
 from music_api.music.rhythm_api import router as rhythm_router
 from music_api.music.theory_api import theory_router
 
@@ -17,3 +18,4 @@ router.include_router(
 )
 router.include_router(theory_router)
 router.include_router(rhythm_router)
+router.include_router(audio_router)

@@ -38,8 +38,13 @@ def test_openapi_shows_functional_endpoints_only(client: TestClient) -> None:
 
     assert "/api/v1/" not in paths
     assert not any(path.startswith("/api/v1/health") for path in paths)
-    assert len(paths) == 13
-    assert {tag["name"] for tag in schema["tags"]} == {"Music theory", "Rhythm"}
+    assert len(paths) == 14
+    assert {tag["name"] for tag in schema["tags"]} == {
+        "Audio analysis",
+        "Music theory",
+        "Rhythm",
+    }
+    assert "/api/v1/audio/analyze" in paths
     assert paths["/api/v1/theory/notes/parse"]["post"]["summary"] == "Parse a musical note"
     assert (
         paths["/api/v1/music/metronome/schedule"]["post"]["summary"]

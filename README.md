@@ -1,6 +1,6 @@
 # Music Intelligence API
 
-A lightweight, stateless FastAPI service for music-theory calculations and metronome schedule generation. It does not use a database, message broker, `.env` file, or background workers.
+A stateless FastAPI service that analyzes uploaded MP3s for estimated tempo, beat positions, key, chord changes, and active pitch classes. It also provides music-theory calculations and metronome schedule generation. It does not use a database, message broker, `.env` file, or background workers.
 
 ## Run locally
 
@@ -23,6 +23,27 @@ The service listens at `http://127.0.0.1:8000` by default:
 - `GET /api/v1/health/ready` — readiness probe
 
 Swagger presents only the main features, grouped into **Music theory** and **Rhythm**. Internal API information and health-check routes remain available to the service and deployment probes but are hidden from the public API documentation. Music-theory operations are under `/api/v1/theory`; metronome schedule generation is at `POST /api/v1/music/metronome/schedule`.
+
+## Analyze an MP3
+
+Open Swagger at `http://127.0.0.1:8000/api/v1/docs`, expand **Audio analysis → POST `/api/v1/audio/analyze`**, click **Try it out**, choose an MP3, optionally provide timestamped LRC lyrics, then click **Execute**.
+
+The endpoint accepts MP3 files up to 50 MB and 10 minutes. It returns estimated BPM, beat timestamps, key, chord events, and estimated chord-tone pitch classes. These are signal-based estimates and may be inaccurate for dense mixes or unusual tuning; they are not isolated instrument or vocal transcriptions. Timestamped lyrics are matched to the nearest beat and active chord. Time-signature detection and automatic singing/lyrics transcription are not implemented. To include lyrics with timestamps, provide LRC text such as:
+
+```text
+[00:12.50]First lyric line
+[00:16.00]Second lyric line
+```
+
+For example, from PowerShell:
+
+```powershell
+curl.exe -X POST "http://127.0.0.1:8000/api/v1/audio/analyze" `
+  -F "file=@C:\music\song.mp3;type=audio/mpeg" `
+  -F "lyrics_lrc=[00:12.50]First lyric line"
+```
+
+FFmpeg is required for decoding. It is installed in the provided Docker image.
 
 ## Configuration
 

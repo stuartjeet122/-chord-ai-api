@@ -27,9 +27,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title=resolved_settings.app_name,
         description=(
-            "Tools for music theory and rhythm. Use the Music theory endpoints to work "
-            "with notes, intervals, scales, chords, keys, progressions, transposition, "
-            "and capo positions. Use Rhythm to generate a metronome schedule."
+            "Upload an MP3 to estimate its tempo, beat positions, key, chord changes, "
+            "and active pitch classes. Optionally include timestamped LRC lyrics to align "
+            "them with the analysis. Also includes standalone music-theory and rhythm tools."
         ),
         version="1.0.0",
         debug=resolved_settings.debug,
@@ -39,6 +39,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=f"{resolved_settings.api_prefix}/redoc" if docs_enabled else None,
         swagger_ui_parameters={"url": "./openapi.json"},
         openapi_tags=[
+            {
+                "name": "Audio analysis",
+                "description": (
+                    "Analyze an MP3 upload for tempo, beats, key, chords, and pitch classes. "
+                    "Timed LRC lyrics can be included for timestamped lyric lines."
+                ),
+            },
             {
                 "name": "Music theory",
                 "description": (
