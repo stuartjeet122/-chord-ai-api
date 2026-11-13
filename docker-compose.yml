@@ -1,0 +1,167 @@
+services:
+  api:
+    build:
+      context: .
+    environment:
+      APP_ENV: development
+      DEBUG: "false"
+      API_PREFIX: /api/v1
+      API_VERSION: v1
+      DATABASE_URL: postgresql+asyncpg://music_api:local-development-only@postgres:5432/music_api
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_PROVIDER: local
+      STORAGE_DIR: /var/lib/music-api
+      STORAGE_DEV_AUTH_ENABLED: "true"
+      TEMP_DIR: /tmp/music-api
+      MAX_UPLOAD_SIZE_BYTES: 104857600
+      MAX_AUDIO_DURATION_SECONDS: 21600
+      MAX_AUDIO_OUTPUT_SIZE_BYTES: 1073741824
+      FFMPEG_PATH: ffmpeg
+      FFPROBE_PATH: ffprobe
+      SOUNDTOUCH_PATH: soundstretch
+      SOUNDTOUCH_VERSION: 2.3.2+ds1-1
+      AUDIO_CONVERSION_TIMEOUT_SECONDS: 21600
+      AUDIO_CONVERSION_MAX_CONCURRENCY: 2
+      USER_STORAGE_QUOTA_BYTES: 5368709120
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - alembic upgrade head && uvicorn music_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    volumes:
+      - api_storage:/var/lib/music-api
+      - api_temp:/tmp/music-api
+    restart: unless-stopped
+
+  audio-worker:
+    build:
+      context: .
+    environment:
+      APP_ENV: development
+      DATABASE_URL: ******postgres:5432/music_api
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_PROVIDER: local
+      STORAGE_DIR: /var/lib/music-api
+      TEMP_DIR: /tmp/music-api
+      MAX_UPLOAD_SIZE_BYTES: 104857600
+      MAX_AUDIO_DURATION_SECONDS: 21600
+      MAX_AUDIO_OUTPUT_SIZE_BYTES: 1073741824
+      FFMPEG_PATH: ffmpeg
+      FFPROBE_PATH: ffprobe
+      SOUNDTOUCH_PATH: soundstretch
+      SOUNDTOUCH_VERSION: 2.3.2+ds1-1
+      AUDIO_CONVERSION_TIMEOUT_SECONDS: 21600
+      AUDIO_CONVERSION_MAX_CONCURRENCY: 2
+      USER_STORAGE_QUOTA_BYTES: 5368709120
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command:
+      - celery
+      - -A
+      - music_api.jobs.celery_app:celery_app
+      - worker
+      - --beat
+      - --loglevel=INFO
+      - --queues=audio_cpu,maintenance
+    volumes:
+      - api_storage:/var/lib/music-api
+      - api_temp:/tmp/music-api
+    restart: unless-stopped
+
+  ai-inference-worker:
+    profiles: ["ai-inference"]
+    build:
+      context: .
+    environment:
+      APP_ENV: development
+      DATABASE_URL: ******postgres:5432/music_api
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_PROVIDER: local
+      STORAGE_DIR: /var/lib/music-api
+      TEMP_DIR: /tmp/music-api
+      FFMPEG_PATH: ffmpeg
+      FFPROBE_PATH: ffprobe
+      AUDIO_CONVERSION_TIMEOUT_SECONDS: 21600
+      AI_MODEL_DIR: /var/lib/music-models
+      AI_EXECUTION_DEVICE: cpu
+      AI_INFERENCE_MAX_CONCURRENCY: 1
+      AI_INFERENCE_TIMEOUT_SECONDS: 21600
+      AI_ALLOW_MODEL_DOWNLOADS: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command:
+      - celery
+      - -A
+      - music_api.jobs.celery_app:celery_app
+      - worker
+      - --loglevel=INFO
+      - --queues=ai_inference
+      - --concurrency=1
+    volumes:
+      - api_storage:/var/lib/music-api
+      - ai_models:/var/lib/music-models:ro
+      - api_temp:/tmp/music-api
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17.6-bookworm
+    environment:
+      POSTGRES_DB: music_api
+      POSTGRES_USER: music_api
+      POSTGRES_PASSWORD: local-development-only
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U music_api -d music_api"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  api_storage:
+  api_temp:
+  ai_models:

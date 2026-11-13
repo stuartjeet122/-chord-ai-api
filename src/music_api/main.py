@@ -1,0 +1,93 @@
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from music_api.api.errors import (
+    application_error_handler,
+    database_error_handler,
+    http_error_handler,
+    validation_error_handler,
+)
+from music_api.api.middleware import RequestContextMiddleware
+from music_api.api.v1.router import router as v1_router
+from music_api.config import Settings, get_settings
+from music_api.errors import ApplicationError
+from music_api.observability import configure_logging
+from music_api.resources import RuntimeResources
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    resolved_settings = settings or get_settings()
+    configure_logging(resolved_settings)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        resources = RuntimeResources(resolved_settings)
+        app.state.resources = resources
+        try:
+            yield
+        finally:
+            await resources.close()
+
+    docs_enabled = resolved_settings.should_enable_docs
+    app = FastAPI(
+        title=resolved_settings.app_name,
+        description="Versioned backend API for music catalog and analysis workflows.",
+        version="1.0.0",
+        debug=resolved_settings.debug,
+        openapi_url=f"{resolved_settings.api_prefix}/openapi.json" if docs_enabled else None,
+        docs_url=f"{resolved_settings.api_prefix}/docs" if docs_enabled else None,
+        redoc_url=f"{resolved_settings.api_prefix}/redoc" if docs_enabled else None,
+        openapi_tags=[
+            {"name": "General", "description": "Service information."},
+            {"name": "Health", "description": "Process and dependency health checks."},
+        ],
+        lifespan=lifespan,
+    )
+    app.state.settings = resolved_settings
+
+    if resolved_settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=resolved_settings.cors_origins,
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            allow_headers=["Authorization", "Content-Type", "If-Match", "Idempotency-Key"],
+            expose_headers=["ETag", "X-Request-ID"],
+        )
+    app.add_middleware(RequestContextMiddleware)
+
+    app.add_exception_handler(ApplicationError, application_error_handler)
+    app.add_exception_handler(StarletteHTTPException, http_error_handler)
+    app.add_exception_handler(RequestValidationError, validation_error_handler)
+    app.add_exception_handler(SQLAlchemyError, database_error_handler)
+
+    app.include_router(v1_router, prefix=resolved_settings.api_prefix)
+    return app
+
+
+def run() -> None:
+    import uvicorn
+
+    settings = get_settings()
+    uvicorn.run(
+        "music_api.main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=False,
+        proxy_headers=True,
+    )
+
+
+app = create_app()
+
+
+if __name__ == "__main__":
+    run()

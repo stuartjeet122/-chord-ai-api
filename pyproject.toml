@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "music-intelligence-api"
+version = "0.1.0"
+description = "Production foundation for the Music Intelligence API"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic==1.17.1",
+    "asyncpg==0.30.0",
+    "boto3==1.40.76",
+    "celery[redis]==5.5.3",
+    "fastapi==0.121.3",
+    "mutagen==1.48.1",
+    "numpy==2.2.6",
+    "Pillow==12.0.0",
+    "pydantic==2.12.4",
+    "pydantic-settings==2.11.0",
+    "python-multipart==0.0.20",
+    "redis==5.2.1",
+    "scipy==1.15.3",
+    "sqlalchemy==2.0.44",
+    "soundfile==0.13.1",
+    "uvicorn[standard]==0.38.0",
+]
+
+[project.scripts]
+music-api = "music_api.main:run"
+
+[project.optional-dependencies]
+dev = [
+    "aiosqlite==0.21.0",
+    "httpx==0.28.1",
+    "mypy==1.18.2",
+    "pytest==8.4.2",
+    "pytest-asyncio==1.2.0",
+    "ruff==0.14.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/music_api"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["migrations/"]
+
+[[tool.mypy.overrides]]
+module = [
+    "asyncpg.*",
+    "aiosqlite.*",
+    "boto3.*",
+    "botocore.*",
+    "celery.*",
+    "psutil",
+    "scipy.*",
+    "soundfile",
+    "torch",
+]
+ignore_missing_imports = true
