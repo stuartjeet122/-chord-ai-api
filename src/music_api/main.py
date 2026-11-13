@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,11 +23,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or get_settings()
     configure_logging(resolved_settings)
     docs_enabled = resolved_settings.should_enable_docs
+    app_base_path = os.environ.get("APP_BASE_PATH", "").rstrip("/")
     app = FastAPI(
         title=resolved_settings.app_name,
         description="Stateless music theory and rhythm utilities.",
         version="1.0.0",
         debug=resolved_settings.debug,
+        servers=[{"url": app_base_path}] if app_base_path else None,
         openapi_url=f"{resolved_settings.api_prefix}/openapi.json" if docs_enabled else None,
         docs_url=f"{resolved_settings.api_prefix}/docs" if docs_enabled else None,
         redoc_url=f"{resolved_settings.api_prefix}/redoc" if docs_enabled else None,

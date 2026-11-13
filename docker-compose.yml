@@ -2,6 +2,8 @@ services:
   api:
     build:
       context: .
+    environment:
+      APP_BASE_PATH: /chord-ai-api
     restart: unless-stopped
     healthcheck:
       test:

@@ -34,6 +34,7 @@ $env:API_PORT = "8000"
 ```
 
 Swagger and ReDoc are enabled by default outside production. They can be enabled or disabled with `DOCS_ENABLED`.
+When deployed behind App Manager under a path such as `/chord-ai-api/`, the `APP_BASE_PATH` supplied by the manager is included in the OpenAPI server URL so Swagger's “Try it out” requests use that path.
 
 ## Docker
 
@@ -42,6 +43,7 @@ docker compose up --build
 ```
 
 Compose runs only the API container.
+The deployment mount prefix is configured as `/chord-ai-api` so Swagger "Try it out" requests use the same public route as the deployed API.
 
 ## Tests
 
